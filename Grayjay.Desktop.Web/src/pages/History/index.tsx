@@ -1,4 +1,4 @@
-import { createResource, type Component, createSignal, onMount, createMemo, createEffect, untrack, batch, Match, Switch, Show } from 'solid-js';
+import { createResource, type Component, createSignal, onMount, createMemo, createEffect, untrack, batch, Match, Switch, Show, For } from 'solid-js';
 import { useVideo } from '../../contexts/VideoProvider';
 import LoaderContainer from '../../components/basics/loaders/LoaderContainer';
 import { HistoryBackend } from '../../backend/HistoryBackend';
@@ -30,6 +30,7 @@ import { Pager } from '../../backend/models/pagers/Pager';
 import { focusable } from "../../focusable"; void focusable;
 import SkeletonDiv from '../../components/basics/loaders/SkeletonDiv';
 import { useFocus } from '../../FocusProvider';
+import { IHistoryViewEvent } from '../../backend/models/history/IHistoryViewEvent';
 
 const HistoryPage: Component = () => {
   const focus = useFocus();
@@ -37,6 +38,9 @@ const HistoryPage: Component = () => {
 
   const [query$, setQuery] = createSignal<string>();
   const [historyPager$, setHistoryPager] = createSignal<Pager<IHistoryVideo> | undefined>(undefined, { equals: false });
+  const [historyEvents$, setHistoryEvents] = createSignal<IHistoryViewEvent[]>([]);
+  const [historyEventsHasMore$, setHistoryEventsHasMore] = createSignal<boolean>(false);
+  let isEventsLoading = false;
 
   let initialLoadComplete = false;
   let isLoading = false;
@@ -173,8 +177,33 @@ const HistoryPage: Component = () => {
   const contentAnchor = new Anchor(null, show$, AnchorStyle.BottomRight, undefined, true);
   createEffect(() => contentAnchor.setUseChildAnchor(focus?.isControllerMode() === true));
 
+  const formatEventDuration = (watchMs?: number) => {
+    if (!watchMs || watchMs <= 0) {
+      return "—";
+    }
+    return Duration.fromMillis(watchMs).toFormat("hh:mm:ss");
+  };
+
+  const loadHistoryEvents = async (reset: boolean) => {
+    if (isEventsLoading) {
+      return;
+    }
+    isEventsLoading = true;
+    try {
+      const existing = reset ? [] : historyEvents$();
+      const lastEvent = existing.length > 0 ? existing[existing.length - 1] : undefined;
+      const before = lastEvent ? DateTime.fromISO(lastEvent.startedAtUtc).toMillis() : undefined;
+      const page = await HistoryBackend.historyEventsLoad(10, before);
+      setHistoryEvents(reset ? page.events : [...existing, ...page.events]);
+      setHistoryEventsHasMore(page.hasMore);
+    } finally {
+      isEventsLoading = false;
+    }
+  };
+
   onMount(() => {
     updateHistoryPager();
+    loadHistoryEvents(true);
   });
 
   let scrollContainerRef: HTMLDivElement | undefined;
@@ -223,6 +252,47 @@ const HistoryPage: Component = () => {
                     });
                   }
                 }} />
+          </div>
+          <div class={styles.eventsSection}>
+            <div class={styles.eventsHeader}>
+              <div class={styles.eventsTitle}>History Events</div>
+              <div style="flex-grow: 1"></div>
+              <CustomButton
+                text="Export CSV"
+                style={{ "margin-right": "12px" }}
+                onClick={() => HistoryBackend.exportHistoryEvents("csv")}
+              />
+              <CustomButton
+                text="Export JSONL"
+                onClick={() => HistoryBackend.exportHistoryEvents("jsonl")}
+              />
+            </div>
+            <Show when={historyEvents$().length > 0} fallback={
+              <div class={styles.eventsEmpty}>No history events yet.</div>
+            }>
+              <div class={styles.eventsList}>
+                <For each={historyEvents$()}>
+                  {(event) => {
+                    const startedAt = DateTime.fromISO(event.startedAtUtc);
+                    return (
+                      <div class={styles.eventRow}>
+                        <div class={styles.eventTime}>{startedAt.toLocaleString(DateTime.DATETIME_MED)}</div>
+                        <div class={styles.eventDuration}>{formatEventDuration(event.watchMs)}</div>
+                        <div class={styles.eventTitle}>{event.title ?? event.url}</div>
+                        <Show when={event.source}>
+                          <div class={styles.eventSource}>{event.source}</div>
+                        </Show>
+                      </div>
+                    );
+                  }}
+                </For>
+              </div>
+            </Show>
+            <Show when={historyEventsHasMore$()}>
+              <div class={styles.eventsMore}>
+                <CustomButton text="Load more events" onClick={() => loadHistoryEvents(false)} />
+              </div>
+            </Show>
           </div>
           <div>
             <Show when={!historyPager$()?.data?.length && initialLoadComplete && !isLoading}>

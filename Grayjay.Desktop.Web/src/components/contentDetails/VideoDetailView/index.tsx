@@ -455,6 +455,18 @@ const VideoDetailView: Component<VideoDetailsProps> = (props) => {
         }
     }
 
+    createEffect(() => {
+        const currentUrl = currentVideo$()?.url;
+        if (!currentUrl) {
+            return;
+        }
+
+        onCleanup(() => {
+            const positionMs = Math.floor(position?.as("milliseconds") ?? lastProgressPosition);
+            DetailsBackend.watchStop(currentUrl, positionMs);
+        });
+    });
+
     const handlePositionChanged = (p: Duration) => {
         position = p;
     };

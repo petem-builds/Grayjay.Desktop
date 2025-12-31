@@ -9,9 +9,26 @@ import { IPlatformVideoDetails } from "./models/contentDetails/IPlatformVideoDet
 import { IVideoDownload } from "./models/downloads/IVideoDownload";
 import { IVideoLocal } from "./models/downloads/IVideoLocal";
 import { Pager } from "./models/pagers/Pager";
+import { uuidv4 } from "../utility";
 
 
 export abstract class DetailsBackend {
+    private static playerSessionId?: string;
+    private static getPlayerSessionId(): string {
+        if (this.playerSessionId) {
+            return this.playerSessionId;
+        }
+
+        const storageKey = "playerSessionId";
+        let stored = localStorage.getItem(storageKey);
+        if (!stored) {
+            stored = uuidv4();
+            localStorage.setItem(storageKey, stored);
+        }
+
+        this.playerSessionId = stored;
+        return stored;
+    }
 
     static async postLoad(url: string): Promise<IPostLoadResult> {
         return await Backend.GET("/details/PostLoad?url=" + encodeURIComponent(url));
@@ -81,7 +98,13 @@ export abstract class DetailsBackend {
     }
 
     static async watchProgress(url: string, progress: number) {
-        return await Backend.GET(`/details/WatchProgress?url=${encodeURIComponent(url)}&position=${Math.floor(progress)}`);
+        const playerSessionId = this.getPlayerSessionId();
+        return await Backend.GET(`/details/WatchProgress?url=${encodeURIComponent(url)}&position=${Math.floor(progress)}&playerSessionId=${encodeURIComponent(playerSessionId)}`);
+    }
+
+    static async watchStop(url: string, progress: number, reason: string = "stop") {
+        const playerSessionId = this.getPlayerSessionId();
+        return await Backend.GET(`/details/WatchStop?url=${encodeURIComponent(url)}&position=${Math.floor(progress)}&playerSessionId=${encodeURIComponent(playerSessionId)}&reason=${encodeURIComponent(reason)}`);
     }
 }
 

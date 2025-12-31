@@ -71,3 +71,75 @@
     margin-left: 24px; 
     margin-right: 24px; 
 }
+
+.eventsSection {
+    margin: 0 32px 32px 32px;
+    padding: 20px;
+    background-color: #171717;
+    border: 1px solid #2e2e2e;
+    border-radius: 8px;
+}
+
+.eventsHeader {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.eventsTitle {
+    color: #ffffff;
+    font-family: Inter;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.eventsList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.eventRow {
+    display: grid;
+    grid-template-columns: 180px 100px 1fr 120px;
+    gap: 16px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.eventTime {
+    color: #bdbdbd;
+    font-size: 14px;
+}
+
+.eventDuration {
+    color: #7fd6ff;
+    font-size: 14px;
+}
+
+.eventTitle {
+    color: #f0f0f0;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.eventSource {
+    color: #9c9c9c;
+    font-size: 13px;
+    text-align: right;
+}
+
+.eventsMore {
+    margin-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.eventsEmpty {
+    color: #9c9c9c;
+    font-size: 14px;
+}
