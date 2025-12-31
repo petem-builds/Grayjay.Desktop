@@ -1249,11 +1249,14 @@ namespace Grayjay.ClientServer.Controllers
         }
 
         [HttpGet]
-        public bool WatchProgress(string url, long position)
+        public bool WatchProgress(string url, long position, string playerSessionId)
         {
             var state = this.State().DetailsState;
             if (url == null)
                 return false;
+
+            StateHistoryEvents.HandleProgress(playerSessionId, url, position, state.VideoLoaded);
+
             if (url == state.VideoLoaded?.Url && state.VideoHistoryIndex.Url == url)
             {
                 state.LiveChatManager?.SetVideoPosition(position);
@@ -1292,6 +1295,16 @@ namespace Grayjay.ClientServer.Controllers
                 }
             }
             return false;
+        }
+
+        [HttpGet]
+        public bool WatchStop(string url, long position, string playerSessionId, string reason = "stop")
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return false;
+
+            StateHistoryEvents.EndEvent(playerSessionId, position, reason);
+            return true;
         }
 
 

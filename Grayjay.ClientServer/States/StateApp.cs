@@ -146,6 +146,10 @@ namespace Grayjay.ClientServer.States
             Connection.EnsureTable<DBSubscriptionCacheIndex>(DBSubscriptionCacheIndex.TABLE_NAME);
             Logger.i(nameof(StateApp), $"Startup: Ensuring Table DBHistory");
             Connection.EnsureTable<DBHistoryIndex>(DBHistoryIndex.TABLE_NAME);
+            Logger.i(nameof(StateApp), $"Startup: Ensuring Table DBHistoryEvents");
+            Connection.EnsureTable<DBHistoryEventIndex>(DBHistoryEventIndex.TABLE_NAME);
+
+            StateHistoryEvents.CloseDanglingEvents(DateTime.UtcNow);
 
             if (GrayjaySettings.Instance.Notifications.PluginUpdates)
             {
